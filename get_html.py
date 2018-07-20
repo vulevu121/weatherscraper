@@ -1,3 +1,7 @@
+# Written by Vu Le
+# Spring 2018
+# Prof. Glenn Healey
+
 import requests
 import csv
 import time

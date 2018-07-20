@@ -1,5 +1,6 @@
 # Written by Vu Le
-# Spring 2018 for Prof. Glenn Healey
+# Spring 2018
+# Prof. Glenn Healey
 
 from parse import parse
 from multiprocessing import Pool

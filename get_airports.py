@@ -1,3 +1,7 @@
+# Written by Vu Le
+# Spring 2018
+# Prof. Glenn Healey
+
 import csv
 import requests
 import json
