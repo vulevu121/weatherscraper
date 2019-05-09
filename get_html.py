@@ -56,30 +56,36 @@ with open(pitches_csv, newline='') as f1:
             YEAR = gameNameSplit[1]
             MONTH = gameNameSplit[2]
             DAY = gameNameSplit[3]
-            URL = 'https://www.wunderground.com/cgi-bin/findweather/getForecast'
+            # URL = 'https://www.wunderground.com/cgi-bin/findweather/getForecast'
+
+
 
             # if gameName is different than the last one, then pull html
             if gameName != lastgameName:
                 for each in ap_list:
                     CODE = bpdata[venue][each]
-
-                    params = {
-                            'airportorwmo': 'query',
-                            'historytype':  'DailyHistory',
-                            'backurl':      '/history/index.html',
-                            'code':         CODE,
-                            'day':          DAY,
-                            'month':        MONTH,
-                            'year':         YEAR,
-                            }
+                    URL = 'https://www.wunderground.com/history/daily/{}/date/{}-{}-{}'.format(CODE, YEAR, MONTH, DAY)
+                    # params = {
+                    #         'airportorwmo': 'query',
+                    #         'historytype':  'DailyHistory',
+                    #         'backurl':      '/history/index.html',
+                    #         'code':         CODE,
+                    #         'day':          DAY,
+                    #         'month':        MONTH,
+                    #         'year':         YEAR,
+                    #         }
 
                     htmlfile = 'wunderground/{}_{}_{}_{}.html'.format(YEAR, MONTH, DAY, CODE)
+
+                    headers = {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36'
+                    }
 
                     # if file exists already then skip
                     if os.path.isfile(htmlfile):
                         continue
 
-                    r = requests.get(URL, params=params)
+                    r = requests.get(URL, headers=headers)
 
                     with open(htmlfile, mode='w', encoding='utf-8') as f:
                         f.write(r.text)
