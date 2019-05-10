@@ -11,13 +11,19 @@ import time
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
-from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEngineProfile, QWebEnginePage
+from PyQt5.QtWebEngineWidgets import QWebEngineView
 from WeatherScraperUI import Ui_MainWindow
 
 class App(QMainWindow, Ui_MainWindow):
+    # resized = pyqtSignal()
     def __init__(self):
         super(self.__class__, self).__init__()
         self.setupUi(self)
+
+        self.settings = QSettings('WeatherScraper', 'WeatherScraper')
+        width = self.settings.value('windowWidth', type=int)
+        height = self.settings.value('windowHeight', type=int)
+        self.resize(width, height)
 
         self.htmlPath = ''
         self.thread = None
@@ -26,16 +32,9 @@ class App(QMainWindow, Ui_MainWindow):
         self.setWindowIcon(QIcon('icon.png'))
         self.webEngineView = QWebEngineView()
 
-        # self.webEngineProfile = QWebEngineProfile()
-        # self.webEngineProfile.setHttpUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.131 Safari/537.36')
-        # self.webEngineView.setUrl(QUrl('https://www.google.com'))
-        # self.webEngineView.setUrl(QUrl('https://www.wunderground.com/history/daily/KCPS/date/2017-4-2'))
-        # self.webEngineView.loadFinished.connect(self.onLoadFinished)
-        # self.webEngineView.loadProgress.connect(self.setProgressBar)
-
         self.verticalLayout_2.addWidget(self.webEngineView)
 
-        self.browseExcelFileButton.clicked.connect(self.browseCsvFile)
+        self.browseCsvFileButton.clicked.connect(self.browseCsvFile)
         self.browseSaveFolderButton.clicked.connect(self.browseSaveFolder)
         self.startButton.clicked.connect(self.getHtml)
         self.saveHtmlButton.clicked.connect(self.saveHtml)
@@ -47,14 +46,15 @@ class App(QMainWindow, Ui_MainWindow):
         self.htmlTimer = QTimer()
         self.htmlTimer.timeout.connect(self.saveHtml)
 
-        self.ballParkJsonLineEdit.setText('C:/Users/Vu/Documents/weatherscraper/ballparks.json')
-        self.excelFileLineEdit.setText('C:/Users/Vu/Documents/weatherscraper/WeatherCompTable2018_vu.csv')
-        self.saveFolderLineEdit.setText('C:/Users/Vu/Documents/weatherscraper/wunderground')
+        self.ballParkJsonLineEdit.setText(self.settings.value('ballParkJsonPath', type=str))
+        self.csvFileLineEdit.setText(self.settings.value('csvFilePath', type=str))
+        self.saveFolderLineEdit.setText(self.settings.value('saveFolder', type=str))
 
-        ballParkJsonPath = self.ballParkJsonLineEdit.text()
-        if len(ballParkJsonPath) > 0:
-            self.loadBallParkJson(ballParkJsonPath)
 
+    def resizeEvent(self, *args, **kwargs):
+        self.settings.setValue('windowWidth', self.width())
+        self.settings.setValue('windowHeight', self.height())
+        # self.resized.emit()
 
     def go(self):
         url = self.urlLineEdit.text()
@@ -70,6 +70,7 @@ class App(QMainWindow, Ui_MainWindow):
 
     def saveHtml(self):
         self.webEngineView.page().toHtml(self.callable)
+        # pass
 
     def loadUrl(self, msg):
         url, htmlPath, progress = msg
@@ -83,13 +84,14 @@ class App(QMainWindow, Ui_MainWindow):
         # self.webEngineView.page().profile().AllowPersistentCookies = False
         # self.webEngineView.page().profile().setHttpCacheType(0)
         # self.webEngineView.page().profile().setHttpUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.131 Safari/537.36')
-        self.webEngineView.setUrl(QUrl(url))
+        # self.webEngineView.setUrl(QUrl(url)
+        self.webEngineView.load(QUrl(url))
         self.setProgressBar(progress)
         self.statusbar.showMessage('Loading page...')
 
     def loadBallParkJson(self, path):
         with open(path, 'r') as f:
-            self.bpdata = json.load(f)
+            self.bpData = json.load(f)
             self.statusbar.showMessage('Ball park JSON loaded...')
 
     def browseBallParkJson(self):
@@ -101,8 +103,8 @@ class App(QMainWindow, Ui_MainWindow):
         )
         if len(path) > 0:
             self.ballParkJsonLineEdit.setText(path)
-
             self.loadBallParkJson(path)
+            self.settings.setValue('ballParkJsonPath', path)
 
     def browseCsvFile(self):
         path, fileType = QFileDialog.getOpenFileName(
@@ -111,18 +113,10 @@ class App(QMainWindow, Ui_MainWindow):
             '',
             'CSV Files (*.csv);;All Files (*)'
         )
-
-        self.excelFileLineEdit.setText(path)
-
-    def browseExcelFile(self):
-        path, fileType = QFileDialog.getOpenFileName(
-            self,
-            'Open Pitch Excel File',
-            '',
-            'XLSX Files (*.xlsx);;All Files (*)'
-        )
         if len(path) > 0:
-            self.excelFileLineEdit.setText(path)
+            self.csvFileLineEdit.setText(path)
+            self.settings.setValue('csvFilePath', path)
+
 
     def browseSaveFolder(self):
         path = QFileDialog.getExistingDirectory(
@@ -132,6 +126,7 @@ class App(QMainWindow, Ui_MainWindow):
         )
         if len(path) > 0:
             self.saveFolderLineEdit.setText(path)
+            self.settings.setValue('saveFolder', path)
 
     def onLoadFinished(self):
         self.statusbar.showMessage('Loading finished.')
@@ -147,13 +142,15 @@ class App(QMainWindow, Ui_MainWindow):
                 print('Loading finished. Page source saved.')
 
     def getHtml(self):
-
         class getHtmlThread(QThread):
             signal = pyqtSignal('PyQt_PyObject')
 
-            def __init__(self, main):
+            def __init__(self):
                 QThread.__init__(self)
-                self.main = main
+                self.delay = None
+                self.bpData = None
+                self.csvFile = None
+                self.saveFolder = None
                 self.stopped = False
 
             def stop(self):
@@ -162,12 +159,12 @@ class App(QMainWindow, Ui_MainWindow):
             def run(self):
                 print('Grabbing HTML files...')
 
-                with open(self.main.excelFileLineEdit.text(), newline='') as f:
+                with open(self.csvFile, newline='') as f:
                     reader = csv.DictReader(f)
 
                     lineCount = sum(1 for row in reader)
 
-                    print(lineCount) # 718751
+                    # print(lineCount) # 718751
 
                     # initialization
                     lastgameName = ''
@@ -182,7 +179,6 @@ class App(QMainWindow, Ui_MainWindow):
 
                     for row in reader:
                         if self.stopped:
-                            self.stopped = False
                             break
 
                         ap_list = ['closest_ap1_code', 'closest_ap2_code', 'closest_ap3_code']
@@ -201,7 +197,7 @@ class App(QMainWindow, Ui_MainWindow):
                                 # print(YEAR, MONTH, DAY)
                                 for each in ap_list:
                                     try:
-                                        CODE = self.main.bpdata[venue][each]
+                                        CODE = self.bpData[venue][each]
                                     except KeyError as error:
                                         CODE = ''
                                         print('{} was not found in ball park data'.format(str(error)))
@@ -212,7 +208,7 @@ class App(QMainWindow, Ui_MainWindow):
                                                                                                                DAY)
 
                                     htmlFile = '{}_{}_{}_{}.html'.format(YEAR, MONTH, DAY, CODE)
-                                    htmlFolder = self.main.saveFolderLineEdit.text()
+                                    htmlFolder = self.saveFolder
 
                                     htmlPath = '/'.join((htmlFolder, htmlFile))
                                     print(URL, htmlPath)
@@ -226,16 +222,21 @@ class App(QMainWindow, Ui_MainWindow):
                                     # print(progress)
 
                                     self.signal.emit((URL, htmlPath, progress))
-                                    time.sleep(20)
+                                    time.sleep(self.delay)
 
                                 lastgameName = gameName
 
         ballParkJson = self.ballParkJsonLineEdit.text()
-        csvFile = self.excelFileLineEdit.text()
+        csvFile = self.csvFileLineEdit.text()
         saveFolder = self.saveFolderLineEdit.text()
 
         if len(ballParkJson) > 0 and len(csvFile) > 0 and len(saveFolder) > 0:
-            self.thread = getHtmlThread(self)
+            self.loadBallParkJson(self.ballParkJsonLineEdit.text())
+            self.thread = getHtmlThread()
+            self.thread.csvFile = self.csvFileLineEdit.text()
+            self.thread.bpData = self.bpData
+            self.thread.saveFolder = self.saveFolderLineEdit.text()
+            self.thread.delay = self.timerSpinBox.value()
             self.thread.signal.connect(self.loadUrl)
             self.thread.start()
         else:

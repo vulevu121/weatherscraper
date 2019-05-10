@@ -2,11 +2,12 @@
 
 # Form implementation generated from reading ui file 'WeatherScraperUI.ui'
 #
-# Created by: PyQt5 UI code generator 5.11.3
+# Created by: PyQt5 UI code generator 5.12.2
 #
 # WARNING! All changes made in this file will be lost!
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -44,15 +45,15 @@ class Ui_MainWindow(object):
         self.stopButton.setObjectName("stopButton")
         self.horizontalLayout.addWidget(self.stopButton)
         self.gridLayout.addLayout(self.horizontalLayout, 3, 1, 1, 1)
-        self.excelFileLineEdit = QtWidgets.QLineEdit(self.centralwidget)
-        self.excelFileLineEdit.setObjectName("excelFileLineEdit")
-        self.gridLayout.addWidget(self.excelFileLineEdit, 1, 1, 1, 1)
+        self.csvFileLineEdit = QtWidgets.QLineEdit(self.centralwidget)
+        self.csvFileLineEdit.setObjectName("csvFileLineEdit")
+        self.gridLayout.addWidget(self.csvFileLineEdit, 1, 1, 1, 1)
         self.label_2 = QtWidgets.QLabel(self.centralwidget)
         self.label_2.setObjectName("label_2")
         self.gridLayout.addWidget(self.label_2, 2, 0, 1, 1)
-        self.browseExcelFileButton = QtWidgets.QPushButton(self.centralwidget)
-        self.browseExcelFileButton.setObjectName("browseExcelFileButton")
-        self.gridLayout.addWidget(self.browseExcelFileButton, 1, 2, 1, 1)
+        self.browseCsvFileButton = QtWidgets.QPushButton(self.centralwidget)
+        self.browseCsvFileButton.setObjectName("browseCsvFileButton")
+        self.gridLayout.addWidget(self.browseCsvFileButton, 1, 2, 1, 1)
         self.ballParkJsonLineEdit = QtWidgets.QLineEdit(self.centralwidget)
         self.ballParkJsonLineEdit.setObjectName("ballParkJsonLineEdit")
         self.gridLayout.addWidget(self.ballParkJsonLineEdit, 0, 1, 1, 1)
@@ -62,6 +63,10 @@ class Ui_MainWindow(object):
         self.browseBallParkJsonButton = QtWidgets.QPushButton(self.centralwidget)
         self.browseBallParkJsonButton.setObjectName("browseBallParkJsonButton")
         self.gridLayout.addWidget(self.browseBallParkJsonButton, 0, 2, 1, 1)
+        self.timerSpinBox = QtWidgets.QSpinBox(self.centralwidget)
+        self.timerSpinBox.setProperty("value", 10)
+        self.timerSpinBox.setObjectName("timerSpinBox")
+        self.gridLayout.addWidget(self.timerSpinBox, 3, 0, 1, 1)
         self.verticalLayout.addLayout(self.gridLayout)
         self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
@@ -84,7 +89,7 @@ class Ui_MainWindow(object):
         self.verticalLayout.addWidget(self.progressBar)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 840, 21))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 840, 25))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
@@ -103,12 +108,13 @@ class Ui_MainWindow(object):
         self.startButton.setText(_translate("MainWindow", "Start"))
         self.saveHtmlButton.setText(_translate("MainWindow", "Save HTML"))
         self.stopButton.setText(_translate("MainWindow", "Stop"))
-        self.excelFileLineEdit.setPlaceholderText(_translate("MainWindow", "Select pitch csv file..."))
+        self.csvFileLineEdit.setPlaceholderText(_translate("MainWindow", "Select pitch csv file..."))
         self.label_2.setText(_translate("MainWindow", "Output Folder"))
-        self.browseExcelFileButton.setText(_translate("MainWindow", "..."))
+        self.browseCsvFileButton.setText(_translate("MainWindow", "..."))
         self.ballParkJsonLineEdit.setPlaceholderText(_translate("MainWindow", "Select ball park data in JSON..."))
         self.label_3.setText(_translate("MainWindow", "Ballpark Data"))
         self.browseBallParkJsonButton.setText(_translate("MainWindow", "..."))
         self.urlLineEdit.setPlaceholderText(_translate("MainWindow", "Website URL"))
         self.goButton.setText(_translate("MainWindow", "Go"))
+
 
