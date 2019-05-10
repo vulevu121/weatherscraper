@@ -1,4 +1,4 @@
-# weatherscraper
+# WeatherScraper v1.0
 
 This weather scraper will pull necessary html files for a given pitch file.
 
@@ -22,4 +22,4 @@ Click on Start!
 ```
 
 ## Author
-Vu Le
+* **Vu Le** [GitHub](https://www.github.com/vulevu121)
