@@ -1,7 +1,9 @@
 # Weather Scraper for Wunderground v1.0
 # Written by Vu L.
-# To install:
-#     pip install pyqt5
+#
+# Install these dependences:
+# pip install pyqt5
+# pip install PyQtWebEngine
 
 import sys
 import os
@@ -68,6 +70,9 @@ class App(QMainWindow, Ui_MainWindow):
     def setProgressBar(self, progress):
         self.progressBar.setValue(progress)
 
+    def setStatusBarMessage(self, msg):
+        self.statusbar.showMessage(msg)
+
     def saveHtml(self):
         self.webEngineView.page().toHtml(self.callable)
         # pass
@@ -78,12 +83,12 @@ class App(QMainWindow, Ui_MainWindow):
         self.htmlPath = htmlPath
         self.htmlTimer.start(200)
         self.urlLineEdit.setText(url)
-        # self.webEngineView.page().profile().clearAllVisitedLinks()
-        # self.webEngineView.page().profile().setCachePath(self.saveFolderLineEdit.text())
-        # self.webEngineView.page().profile().clearHttpCache()
+        self.webEngineView.page().profile().clearAllVisitedLinks()
+        self.webEngineView.page().profile().setCachePath(self.saveFolderLineEdit.text())
+        self.webEngineView.page().profile().clearHttpCache()
         # self.webEngineView.page().profile().AllowPersistentCookies = False
         # self.webEngineView.page().profile().setHttpCacheType(0)
-        # self.webEngineView.page().profile().setHttpUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.131 Safari/537.36')
+        self.webEngineView.page().profile().setHttpUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.131 Safari/537.36')
         # self.webEngineView.setUrl(QUrl(url)
         self.webEngineView.load(QUrl(url))
         self.setProgressBar(progress)
@@ -144,6 +149,7 @@ class App(QMainWindow, Ui_MainWindow):
     def getHtml(self):
         class getHtmlThread(QThread):
             signal = pyqtSignal('PyQt_PyObject')
+            message = pyqtSignal('PyQt_PyObject')
 
             def __init__(self):
                 QThread.__init__(self)
@@ -157,6 +163,7 @@ class App(QMainWindow, Ui_MainWindow):
                 self.stopped = True
 
             def run(self):
+                self.message.emit('Grabbing HTML files...')
                 print('Grabbing HTML files...')
 
                 with open(self.csvFile, newline='') as f:
@@ -238,6 +245,7 @@ class App(QMainWindow, Ui_MainWindow):
             self.thread.saveFolder = self.saveFolderLineEdit.text()
             self.thread.delay = self.timerSpinBox.value()
             self.thread.signal.connect(self.loadUrl)
+            self.thread.message.connect(self.setStatusBarMessage)
             self.thread.start()
         else:
             self.statusbar.showMessage('Please choose files/folders')
