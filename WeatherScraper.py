@@ -1,9 +1,9 @@
 # Weather Scraper for Wunderground v1.0
 # Written by Vu L.
-#
-# Install these dependences:
-# pip install pyqt5
-# pip install PyQtWebEngine
+
+# Install these dependencies:
+# pip install pyqt5==5.12.2
+# pip install pyqtwebengine==5.12.1
 
 import sys
 import os
@@ -17,67 +17,84 @@ from PyQt5.QtWebEngineWidgets import QWebEngineView
 from WeatherScraperUI import Ui_MainWindow
 
 class App(QMainWindow, Ui_MainWindow):
-    # resized = pyqtSignal()
     def __init__(self):
         super(self.__class__, self).__init__()
         self.setupUi(self)
 
+        # window size settings and restore
         self.settings = QSettings('WeatherScraper', 'WeatherScraper')
         width = self.settings.value('windowWidth', type=int)
         height = self.settings.value('windowHeight', type=int)
         self.resize(width, height)
 
         self.htmlPath = ''
+
+        # thread for reading pitch file
         self.thread = None
 
         self.setWindowTitle('Wunderground Weather Scraper v1.0')
-        self.setWindowIcon(QIcon('icon.png'))
+        self.setWindowIcon(QIcon(':/icon/icon.png'))
         self.webEngineView = QWebEngineView()
 
         self.verticalLayout_2.addWidget(self.webEngineView)
 
+        # button connections
         self.browseCsvFileButton.clicked.connect(self.browseCsvFile)
         self.browseSaveFolderButton.clicked.connect(self.browseSaveFolder)
         self.startButton.clicked.connect(self.getHtml)
         self.saveHtmlButton.clicked.connect(self.saveHtml)
         self.stopButton.clicked.connect(self.stopThread)
-
         self.goButton.clicked.connect(self.go)
         self.browseBallParkJsonButton.clicked.connect(self.browseBallParkJson)
 
+        # timer to check if html has what we need
         self.htmlTimer = QTimer()
         self.htmlTimer.timeout.connect(self.saveHtml)
 
+        # restore last saved settings
         self.ballParkJsonLineEdit.setText(self.settings.value('ballParkJsonPath', type=str))
         self.csvFileLineEdit.setText(self.settings.value('csvFilePath', type=str))
         self.saveFolderLineEdit.setText(self.settings.value('saveFolder', type=str))
 
-
     def resizeEvent(self, *args, **kwargs):
         self.settings.setValue('windowWidth', self.width())
         self.settings.setValue('windowHeight', self.height())
-        # self.resized.emit()
 
     def go(self):
+        """Load the web url shown in url line edit."""
         url = self.urlLineEdit.text()
-        self.webEngineView.setUrl(QUrl(url))
+        adjustedUrl = QUrl.fromUserInput(url)
+        self.webEngineView.load(adjustedUrl)
+        self.urlLineEdit.setText(adjustedUrl.toString())
 
     def stopThread(self):
+        """Stop the html grabbing thread."""
         self.statusbar.showMessage('Thread stopping...')
         print('Thread stopping...')
         self.thread.stop()
 
     def setProgressBar(self, progress):
+        """Set the progress of the progress bar."""
         self.progressBar.setValue(progress)
 
     def setStatusBarMessage(self, msg):
+        """Set the message of the status bar."""
         self.statusbar.showMessage(msg)
 
     def saveHtml(self):
-        self.webEngineView.page().toHtml(self.callable)
-        # pass
+        """Save the html file to disk."""
+        path, fileType = QFileDialog.getSaveFileName(
+            self,
+            'Save HTML File',
+            '',
+            'HTML Files (*.html);;All Files (*)'
+        )
+        if len(path) > 0:
+            self.htmlPath = path
+            self.webEngineView.page().toHtml(self.callable)
 
     def loadUrl(self, msg):
+        """Call function within thread to load url."""
         url, htmlPath, progress = msg
 
         self.htmlPath = htmlPath
@@ -89,17 +106,19 @@ class App(QMainWindow, Ui_MainWindow):
         # self.webEngineView.page().profile().AllowPersistentCookies = False
         # self.webEngineView.page().profile().setHttpCacheType(0)
         self.webEngineView.page().profile().setHttpUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.131 Safari/537.36')
-        # self.webEngineView.setUrl(QUrl(url)
+
         self.webEngineView.load(QUrl(url))
         self.setProgressBar(progress)
         self.statusbar.showMessage('Loading page...')
 
     def loadBallParkJson(self, path):
+        """Load ball park data in JSON format."""
         with open(path, 'r') as f:
             self.bpData = json.load(f)
             self.statusbar.showMessage('Ball park JSON loaded...')
 
     def browseBallParkJson(self):
+        """Open file dialog and select ball park JSON file."""
         path, fileType = QFileDialog.getOpenFileName(
             self,
             'Open Ball Park JSON Data',
@@ -112,6 +131,7 @@ class App(QMainWindow, Ui_MainWindow):
             self.settings.setValue('ballParkJsonPath', path)
 
     def browseCsvFile(self):
+        """Open file dialog and select csv file."""
         path, fileType = QFileDialog.getOpenFileName(
             self,
             'Open Pitch CSV File',
@@ -124,6 +144,7 @@ class App(QMainWindow, Ui_MainWindow):
 
 
     def browseSaveFolder(self):
+        """Open folder dialog and select folder to save html files."""
         path = QFileDialog.getExistingDirectory(
             self,
             'Select the save folder',
@@ -133,10 +154,8 @@ class App(QMainWindow, Ui_MainWindow):
             self.saveFolderLineEdit.setText(path)
             self.settings.setValue('saveFolder', path)
 
-    def onLoadFinished(self):
-        self.statusbar.showMessage('Loading finished.')
-
     def callable(self, data):
+        """Call function for asynchronous html loading."""
         self.html = data
 
         if self.html.find('class="observation-table"') > 0:
@@ -147,6 +166,7 @@ class App(QMainWindow, Ui_MainWindow):
                 print('Loading finished. Page source saved.')
 
     def getHtml(self):
+        """Thread to get all html files for pitch file."""
         class getHtmlThread(QThread):
             signal = pyqtSignal('PyQt_PyObject')
             message = pyqtSignal('PyQt_PyObject')
