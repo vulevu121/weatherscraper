@@ -58,8 +58,6 @@ with open(pitches_csv, newline='') as f1:
             DAY = gameNameSplit[3]
             # URL = 'https://www.wunderground.com/cgi-bin/findweather/getForecast'
 
-
-
             # if gameName is different than the last one, then pull html
             if gameName != lastgameName:
                 for each in ap_list:
