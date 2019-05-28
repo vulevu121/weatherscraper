@@ -130,8 +130,11 @@ class Ui_MainWindow(object):
         self.label.setText(_translate("MainWindow", "Pitch File"))
         self.browseSaveFolderButton.setText(_translate("MainWindow", "..."))
         self.saveFolderLineEdit.setPlaceholderText(_translate("MainWindow", "Select the folder to save HTML files to..."))
+        self.startButton.setToolTip(_translate("MainWindow", "Start pulling HTML files"))
         self.startButton.setText(_translate("MainWindow", "Start"))
+        self.saveHtmlButton.setToolTip(_translate("MainWindow", "Save HTML file to specified path"))
         self.saveHtmlButton.setText(_translate("MainWindow", "Save HTML"))
+        self.stopButton.setToolTip(_translate("MainWindow", "Stop thread from pulling HTML files"))
         self.stopButton.setText(_translate("MainWindow", "Stop"))
         self.csvFileLineEdit.setPlaceholderText(_translate("MainWindow", "Select pitch csv file..."))
         self.label_2.setText(_translate("MainWindow", "Output Folder"))
@@ -139,6 +142,7 @@ class Ui_MainWindow(object):
         self.ballParkJsonLineEdit.setPlaceholderText(_translate("MainWindow", "Select ball park data in JSON..."))
         self.label_3.setText(_translate("MainWindow", "Ballpark Data"))
         self.browseBallParkJsonButton.setText(_translate("MainWindow", "..."))
+        self.timerSpinBox.setToolTip(_translate("MainWindow", "Loading interval between pages (s)"))
         self.urlLineEdit.setPlaceholderText(_translate("MainWindow", "Website URL"))
         self.goButton.setText(_translate("MainWindow", "Go"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("MainWindow", "Get HTML"))
@@ -146,3 +150,4 @@ class Ui_MainWindow(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("MainWindow", "Parse"))
 
 
+import WeatherScraper_rc
