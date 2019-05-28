@@ -13,8 +13,10 @@ import time
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
+
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from WeatherScraperUI import Ui_MainWindow
+from bs4 import BeautifulSoup
 
 class App(QMainWindow, Ui_MainWindow):
     # resized = pyqtSignal()
@@ -44,6 +46,8 @@ class App(QMainWindow, Ui_MainWindow):
 
         self.goButton.clicked.connect(self.go)
         self.browseBallParkJsonButton.clicked.connect(self.browseBallParkJson)
+
+        self.parseButton.clicked.connect(self.parse)
 
         self.htmlTimer = QTimer()
         self.htmlTimer.timeout.connect(self.saveHtml)
@@ -147,6 +151,7 @@ class App(QMainWindow, Ui_MainWindow):
                 print('Loading finished. Page source saved.')
 
     def getHtml(self):
+        from datetime import datetime
         class getHtmlThread(QThread):
             signal = pyqtSignal('PyQt_PyObject')
             message = pyqtSignal('PyQt_PyObject')
@@ -192,12 +197,19 @@ class App(QMainWindow, Ui_MainWindow):
 
                         if (reader.line_num >= startRow):
                             gameName = row['gameName']
+                            svId = row['sv_id']
                             venue = row['venue']
                             gameNameSplit = gameName.split(sep='_')
 
-                            YEAR = gameNameSplit[1]
-                            MONTH = gameNameSplit[2]
-                            DAY = gameNameSplit[3]
+                            gameDatetime = datetime.strptime(svId, '%y%m%d_%H%M%S')
+
+                            # YEAR = gameNameSplit[1]
+                            # MONTH = gameNameSplit[2]
+                            # DAY = gameNameSplit[3]
+
+                            YEAR = gameDatetime.year
+                            MONTH = gameDatetime.month
+                            DAY = gameDatetime.day
 
                             # if gameName is different than the last one, then pull html
                             if gameName != lastgameName:
@@ -249,6 +261,53 @@ class App(QMainWindow, Ui_MainWindow):
             self.thread.start()
         else:
             self.statusbar.showMessage('Please choose files/folders')
+
+    def parse(self):
+        from os import listdir
+        from os.path import join
+        from collections import OrderedDict
+
+        htmlPath = self.saveFolderLineEdit.text().replace('/', '\\')
+        htmlFiles = [join(htmlPath, f) for f in listdir(htmlPath) if f.__contains__('.html')]
+
+        # iterate through all html files
+        for h in htmlFiles:
+            with open(h, encoding='utf-8') as html:
+                soup = BeautifulSoup(html, "lxml")
+
+                # table contains weather info
+                table = soup.find(name='table', class_='tablesaw-sortable', id='history-observation-table')
+
+                # all spans within table
+                spans = table.find_all(name='span')
+
+                # skip header up to 11
+                i = 11
+                data = []
+
+                # split up data into lists of 26
+                while i < len(spans):
+                    row = spans[i:i + 27]
+                    data.append([x.text.replace('\n', '').strip() for x in row])
+                    i += 27
+
+                # organize into a dictionary
+                weatherDict = OrderedDict()
+                for row in data:
+                    weatherDict[row[0]] = {
+                        'Temperature': row[1],
+                        'Dew Point': row[4],
+                        'Humidity': row[7],
+                        'Wind': row[10],
+                        'Wind Speed': row[11],
+                        'Wind Gust': row[14],
+                        'Pressure': row[17],
+                        'Precip': row[20],
+                        'Precip Accum': row[23],
+                        'Condition': row[26]
+                    }
+                self.parseFileEdit.setText(h)
+                self.parseEdit.setPlainText(str(weatherDict))
 
 
 if __name__ == '__main__':
