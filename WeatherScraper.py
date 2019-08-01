@@ -341,6 +341,9 @@ class App(QMainWindow, Ui_MainWindow):
                 self.parseFileEdit.setText(h)
                 self.parseEdit.setPlainText(str(weatherDict))
 
+                with open('{}.json'.format(h[:-5]), 'w') as fo:
+                    fo.write(str(weatherDict))
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
