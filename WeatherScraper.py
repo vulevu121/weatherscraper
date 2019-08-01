@@ -5,11 +5,19 @@
 # pip install pyqt5
 # pip install PyQtWebEngine
 
+# 7/31/19 changelog
+# Improved thread handling
+# Fixed webengine not showing up
+# Fixed save html filenaming
+# Added enter key press handler
+
 import sys
 import os
 import csv
 import json
 import time
+import datetime
+import re
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -35,8 +43,8 @@ class App(QMainWindow, Ui_MainWindow):
         self.setWindowTitle('Wunderground Weather Scraper v1.0')
         self.setWindowIcon(QIcon('icon.png'))
         self.webEngineView = QWebEngineView()
-
         self.verticalLayout_2.addWidget(self.webEngineView)
+        self.webEngineView.load(QUrl("https://www.wunderground.com/"))
 
         self.browseCsvFileButton.clicked.connect(self.browseCsvFile)
         self.browseSaveFolderButton.clicked.connect(self.browseSaveFolder)
@@ -44,7 +52,9 @@ class App(QMainWindow, Ui_MainWindow):
         self.saveHtmlButton.clicked.connect(self.saveHtml)
         self.stopButton.clicked.connect(self.stopThread)
 
+
         self.goButton.clicked.connect(self.go)
+        self.urlLineEdit.returnPressed.connect(self.go)
         self.browseBallParkJsonButton.clicked.connect(self.browseBallParkJson)
 
         self.parseButton.clicked.connect(self.parse)
@@ -67,9 +77,12 @@ class App(QMainWindow, Ui_MainWindow):
         self.webEngineView.setUrl(QUrl(url))
 
     def stopThread(self):
-        self.statusbar.showMessage('Thread stopping...')
-        print('Thread stopping...')
+        self.statusbar.showMessage('Thread stopped')
+        self.htmlTimer.stop()
         self.thread.stop()
+        self.startButton.setEnabled(True)
+        self.saveHtmlButton.setEnabled(True)
+        self.goButton.setEnabled(True)
 
     def setProgressBar(self, progress):
         self.progressBar.setValue(progress)
@@ -79,7 +92,6 @@ class App(QMainWindow, Ui_MainWindow):
 
     def saveHtml(self):
         self.webEngineView.page().toHtml(self.callable)
-        # pass
 
     def loadUrl(self, msg):
         url, htmlPath, progress = msg
@@ -144,17 +156,29 @@ class App(QMainWindow, Ui_MainWindow):
         self.html = data
 
         if self.html.find('class="observation-table"') > 0:
-            with open(self.htmlPath, 'w', encoding='utf-8') as f:
+            url = self.urlLineEdit.text()
+            m = re.search('\/daily\/(\w+)\/date\/(\w+)-(\w+)-(\w+)', url)
+            code = m.group(1)
+            year = m.group(2)
+            mon = m.group(3)
+            day = m.group(4)
+
+            folder = self.saveFolderLineEdit.text()
+
+            htmlPath = '{}/{}_{}_{}_{}.html'.format(folder, year, mon, day, code)
+
+            with open(htmlPath, 'w', encoding='utf-8') as f:
                 f.write(self.html)
                 self.htmlTimer.stop()
                 self.statusbar.showMessage('Loading finished. Page source saved.')
-                print('Loading finished. Page source saved.')
+                # print('Loading finished. Page source saved.')
 
     def getHtml(self):
         from datetime import datetime
         class getHtmlThread(QThread):
             signal = pyqtSignal('PyQt_PyObject')
             message = pyqtSignal('PyQt_PyObject')
+            appendLog = pyqtSignal('PyQt_PyObject')
 
             def __init__(self):
                 QThread.__init__(self)
@@ -168,8 +192,10 @@ class App(QMainWindow, Ui_MainWindow):
                 self.stopped = True
 
             def run(self):
-                self.message.emit('Grabbing HTML files...')
-                print('Grabbing HTML files...')
+                # self.message.emit('Grabbing HTML files...')
+                self.appendLog.emit('Grabbing HTML files...')
+
+                # print('Grabbing HTML files...')
 
                 with open(self.csvFile, newline='') as f:
                     reader = csv.DictReader(f)
@@ -219,7 +245,7 @@ class App(QMainWindow, Ui_MainWindow):
                                         CODE = self.bpData[venue][each]
                                     except KeyError as error:
                                         CODE = ''
-                                        print('{} was not found in ball park data'.format(str(error)))
+                                        self.appendLog.emit('{} was not found in ball park data'.format(str(error)))
                                         continue
                                     URL = 'https://www.wunderground.com/history/daily/{}/date/{}-{}-{}'.format(CODE,
                                                                                                                YEAR,
@@ -230,11 +256,10 @@ class App(QMainWindow, Ui_MainWindow):
                                     htmlFolder = self.saveFolder
 
                                     htmlPath = '/'.join((htmlFolder, htmlFile))
-                                    print(URL, htmlPath)
+                                    self.appendLog.emit('{}, {}'.format(URL, htmlPath))
 
                                     # if file exists already then skip
                                     if os.path.isfile(htmlPath):
-                                        print('File already exists')
                                         continue
 
                                     progress = int(round(reader.line_num / lineCount * 100))
@@ -258,9 +283,16 @@ class App(QMainWindow, Ui_MainWindow):
             self.thread.delay = self.timerSpinBox.value()
             self.thread.signal.connect(self.loadUrl)
             self.thread.message.connect(self.setStatusBarMessage)
+            self.thread.appendLog.connect(self.appendLog)
             self.thread.start()
+            self.startButton.setEnabled(False)
+            self.saveHtmlButton.setEnabled(False)
+            self.goButton.setEnabled(False)
         else:
             self.statusbar.showMessage('Please choose files/folders')
+
+    def appendLog(self, msg):
+        self.logEdit.appendPlainText('{}: {}'.format(datetime.datetime.now(), msg))
 
     def parse(self):
         from os import listdir
