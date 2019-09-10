@@ -1,6 +1,6 @@
 # WeatherScraper v1.0
 
-This weather scraper will pull necessary html files for a given pitch file.
+This weather scraper will pull necessary html files for a given pitch file from Wunderground.
 
 ## Dependencies
 ```
